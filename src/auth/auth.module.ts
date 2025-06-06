@@ -6,17 +6,20 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
-import { ConfigModule } from '@nestjs/config'; // ✅ import เพิ่ม
+import { ConfigModule, ConfigService } from '@nestjs/config'; // ✅ import เพิ่ม
 
 @Module({
   imports: [
     PrismaModule,
     PassportModule,
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'secret-key',
-      signOptions: { expiresIn: '1d' },
+    JwtModule.registerAsync({
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET', 'secret-key'),
+        signOptions: { expiresIn: '1d' },
+      }),
+      inject: [ConfigService],
     }),
-    ConfigModule, // ✅ เพิ่มเข้าไปใน imports
+    ConfigModule,
   ],
   providers: [AuthService, JwtStrategy],
   controllers: [AuthController],

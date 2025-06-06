@@ -1,26 +1,29 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
-    cors: {
-      origin: 'http://localhost:3000', // Frontend URL
-      credentials: true,
-      // methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    },
+  const app = await NestFactory.create(AppModule);
+
+  const configService = app.get(ConfigService);
+
+  app.enableCors({
+    origin: configService.get<string>('CORS_ORIGIN'),
+    credentials: true,
   });
 
   const config = new DocumentBuilder()
     .setTitle('Inventory System API')
     .setDescription('ระบบ API สำหรับ Inventory System')
     .setVersion('1.0')
-    .addBearerAuth() // ✅ สำหรับใช้ JWT Auth
+    .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document); // ➜ http://localhost:3001/api
+  SwaggerModule.setup('api', app, document);
 
-  await app.listen(3001);
+  const port = configService.get<number>('PORT') || 3001;
+  await app.listen(port);
 }
 bootstrap();
