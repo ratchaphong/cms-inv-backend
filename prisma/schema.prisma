@@ -1,0 +1,78 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// datasource db {
+//   provider = "postgresql"
+//   url      = env("DATABASE_URL")
+// }
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum StockType {
+  IN
+  OUT
+}
+
+enum ProductStatus {
+  AVAILABLE
+  LOW_STOCK
+  OUT_OF_STOCK
+}
+
+model User {
+  id          Int       @id @default(autoincrement())
+  email       String    @unique
+  password    String
+  name        String
+  firstName   String?
+  lastName    String?
+  phoneNumber String?
+  gender      String?
+  birthDate   DateTime?
+  avatarUrl   String?
+  address     String?
+  role        String    @default("user")
+  createdAt   DateTime  @default(now())
+}
+
+model Product {
+  id           Int           @id @default(autoincrement())
+  name         String
+  category     String?
+  currentStock Int           @default(0)
+  stock        Stock[]
+  createdAt    DateTime      @default(now())
+  status       ProductStatus @default(AVAILABLE)
+  StockReport  StockReport[]
+}
+
+model Stock {
+  id        Int       @id @default(autoincrement())
+  type      StockType
+  quantity  Int
+  productId Int
+  product   Product   @relation(fields: [productId], references: [id])
+  createdAt DateTime  @default(now())
+  note      String? // ✅ เพิ่มตรงนี้ (nullable)
+}
+
+model StockReport {
+  id         Int       @id @default(autoincrement())
+  stockId    Int // อ้างอิงจาก Stock เดิม
+  type       StockType
+  quantity   Int
+  note       String?
+  productId  Int
+  product    Product   @relation(fields: [productId], references: [id])
+  createdAt  DateTime
+  archivedAt DateTime  @default(now()) // ✅ เวลาที่ backup
+}
