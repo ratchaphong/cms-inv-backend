@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # ----------------------------------------
+  # PostgreSQL Database Service
+  # ----------------------------------------
+  postgres:
+    image: postgres:15 # ใช้ PostgreSQL v15
+    container_name: bstore-postgres # ชื่อ container
+    environment:
+      POSTGRES_USER: myuser # user ที่สร้างใน DB
+      POSTGRES_PASSWORD: mypassword # password ของ user
+      POSTGRES_DB: bstore_dev # สร้างฐานข้อมูล bstore_dev
+    ports:
+      - '5432:5432' # แมปพอร์ตให้ host เชื่อมได้
+    volumes:
+      - pgdata:/var/lib/postgresql/data # เก็บ data ถาวร
+    # (ถ้าต้องการ healthcheck ให้เพิ่มเองตามสะดวก)
+
+  # ----------------------------------------
+  # NestJS + Prisma Application Service
+  # ----------------------------------------
+  app:
+    image: node:20-alpine # ใช้ Node.js บน Alpine
+    container_name: bstore-app # ชื่อ container ของแอป
+    working_dir: /app # โฟลเดอร์ทำงานภายใน container
+    env_file:
+      - .env.postgre # โหลดตัวแปรจาก .env.postgre
+    volumes:
+      - .:/app # mount โค้ดโปรเจกต์จาก host → /app
+      - /app/node_modules # แยก node_modules ใน container
+    ports:
+      - '8080:8080' # แมปพอร์ตแอปให้ host เข้าถึง
+      - '5555:5555' # สำหรับ Prisma Studio UI
+    depends_on:
+      - postgres # รอให้ postgres ขึ้นก่อน
+    command: > # คำสั่งสเต็ปเดียวจบ
+      sh -c "
+        # 1. ติดตั้ง dependencies ตาม yarn.lock (error ถ้ามี mismatch)
+        yarn install --frozen-lockfile &&
+
+        # 2. สร้าง Prisma Client
+        yarn prisma generate &&
+
+        # 3. สร้าง/sync ตารางใน DB
+        yarn prisma db push &&
+
+        # 4. คอมไพล์ TypeScript → JavaScript
+        yarn build &&
+
+        # 5. รัน NestJS (prod mode)
+        yarn start:prod
+      "
+    restart: unless-stopped # ถ้า crash จะ restart ให้
+
+volumes:
+  pgdata: # ประกาศ named volume สำหรับ Postgres data
