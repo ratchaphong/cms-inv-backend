@@ -26,6 +26,7 @@ import { plainToInstance } from 'class-transformer';
 import { User } from '@prisma/client';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { UserEntity } from './entities/user.entity';
 
 @ApiTags('Users')
 @Controller('users')
@@ -40,7 +41,7 @@ export class UserController {
     type: UserResponseDto,
   })
   async create(@Body() body: CreateUserDto): Promise<UserResponseDto> {
-    const user = await this.userService.create(body);
+    const user: UserEntity = await this.userService.create(body);
     return plainToInstance(UserResponseDto, user, {
       excludeExtraneousValues: true, // คัดเฉพาะที่มี @Expose
     });
@@ -54,7 +55,7 @@ export class UserController {
     isArray: true,
   })
   async findAll(): Promise<UserResponseDto[]> {
-    const users = await this.userService.findAll();
+    const users: UserEntity[] = await this.userService.findAll();
     return plainToInstance(UserResponseDto, users, {
       excludeExtraneousValues: true, // คัดเฉพาะที่มี @Expose
     });
@@ -73,8 +74,8 @@ export class UserController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateUserDto,
-  ) {
-    const user = await this.userService.update(id, dto);
+  ): Promise<UserResponseDto> {
+    const user: UserEntity = await this.userService.update(id, dto);
     return plainToInstance(UserResponseDto, user, {
       excludeExtraneousValues: true, // คัดเฉพาะที่มี @Expose
     });
@@ -85,9 +86,8 @@ export class UserController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'ดูข้อมูลโปรไฟล์ของตัวเอง' })
   @ApiOkResponse({ type: UserResponseDto })
-  async getProfile(@CurrentUser() user: User) {
-    const fullUser = await this.userService.findByEmail(user.email);
-
+  async getProfile(@CurrentUser() user: User): Promise<UserResponseDto> {
+    const fullUser: UserEntity = await this.userService.findByEmail(user.email);
     return plainToInstance(UserResponseDto, fullUser, {
       excludeExtraneousValues: true,
     });

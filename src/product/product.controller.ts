@@ -25,6 +25,7 @@ import { ClearResponseDto } from './dto/clear-response.dto';
 import { plainToInstance } from 'class-transformer';
 import { JwtAuthGuard } from 'src/user/guards/jwt-auth.guard';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { ProductEntity } from './entities/product.entity';
 
 @ApiTags('Products')
 @Controller('products')
@@ -41,7 +42,7 @@ export class ProductController {
     type: ProductResponseDto,
   })
   async create(@Body() body: CreateProductDto): Promise<ProductResponseDto> {
-    const product = await this.productService.create(body);
+    const product: ProductEntity = await this.productService.create(body);
     return plainToInstance(ProductResponseDto, product, {
       excludeExtraneousValues: true, // คัดเฉพาะที่มี @Expose
     });
@@ -55,7 +56,7 @@ export class ProductController {
     isArray: true,
   })
   async findAll(): Promise<ProductResponseDto[]> {
-    const products = await this.productService.findAll();
+    const products: ProductEntity[] = await this.productService.findAll();
     return plainToInstance(ProductResponseDto, products, {
       excludeExtraneousValues: true, // คัดเฉพาะที่มี @Expose
     });
@@ -70,7 +71,7 @@ export class ProductController {
   async findOne(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<ProductResponseDto> {
-    const product = await this.productService.findOne(id);
+    const product: ProductEntity = await this.productService.findOne(id);
     return plainToInstance(ProductResponseDto, product, {
       excludeExtraneousValues: true,
     });
@@ -89,7 +90,10 @@ export class ProductController {
     @Param('id', ParseIntPipe) id: number,
     @Body() body: UpdateProductDto,
   ): Promise<ProductResponseDto> {
-    const updated = await this.productService.updateProduct(id, body);
+    const updated: ProductEntity = await this.productService.updateProduct(
+      id,
+      body,
+    );
     return plainToInstance(ProductResponseDto, updated, {
       excludeExtraneousValues: true,
     });
@@ -106,7 +110,7 @@ export class ProductController {
   async deleteProduct(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<ProductResponseDto> {
-    const deleted = await this.productService.deleteProduct(id);
+    const deleted: ProductEntity = await this.productService.deleteProduct(id);
     return plainToInstance(ProductResponseDto, deleted, {
       excludeExtraneousValues: true,
     });
@@ -122,6 +126,9 @@ export class ProductController {
   })
   async clearAllProducts(): Promise<ClearResponseDto> {
     await this.productService.clearAll();
-    return { message: '✅ Cleared all products' };
+    const plain = { message: '✅ Cleared all products' };
+    return plainToInstance(ClearResponseDto, plain, {
+      excludeExtraneousValues: true,
+    });
   }
 }

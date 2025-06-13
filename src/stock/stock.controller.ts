@@ -15,6 +15,8 @@ import { StockResponseDto } from './dto/stock-response.dto';
 import { StockCronReportDto } from './dto/stock-cron-report.dto';
 import { plainToInstance } from 'class-transformer';
 import { StockArchivedReportDto } from './dto/stock-archived-report.dto';
+import { StockArchivedReportEntity } from './entities/stock-archived-report.entity';
+import { StockEntity } from './entities/stock.entity';
 
 @ApiTags('Stock')
 @Controller('stocks')
@@ -31,7 +33,7 @@ export class StockController {
     type: StockResponseDto,
   })
   async create(@Body() dto: CreateStockDto): Promise<StockResponseDto> {
-    const created = await this.stockService.create(dto);
+    const created: StockEntity = await this.stockService.create(dto);
     return plainToInstance(StockResponseDto, created, {
       excludeExtraneousValues: true,
     });
@@ -47,13 +49,12 @@ export class StockController {
     isArray: true,
   })
   async findAll(): Promise<StockResponseDto[]> {
-    const all = await this.stockService.findAll();
+    const all: StockEntity[] = await this.stockService.findAll();
     return plainToInstance(StockResponseDto, all, {
       excludeExtraneousValues: true,
     });
   }
 
-  // ✅ เพิ่ม Endpoint: manual cleanup
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Get('/cron/report')
@@ -65,10 +66,16 @@ export class StockController {
     type: StockCronReportDto,
   })
   async runReport(): Promise<StockCronReportDto> {
-    return this.stockService.runManualCleanup();
+    await this.stockService.runManualCleanup();
+    const plain = {
+      success: true,
+      message: 'Archived & cleaned old stock successfully.',
+    };
+    return plainToInstance(StockCronReportDto, plain, {
+      excludeExtraneousValues: true,
+    });
   }
 
-  // ✅ เพิ่ม Endpoint: manual warning
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Get('/cron/warning')
@@ -78,7 +85,14 @@ export class StockController {
     type: StockCronReportDto,
   })
   async runWarning(): Promise<StockCronReportDto> {
-    return this.stockService.runManualWarning();
+    await this.stockService.runManualWarning();
+    const plain = {
+      success: true,
+      message: 'Checked old stock successfully.',
+    };
+    return plainToInstance(StockCronReportDto, plain, {
+      excludeExtraneousValues: true,
+    });
   }
 
   @UseGuards(JwtAuthGuard)
@@ -91,6 +105,10 @@ export class StockController {
     isArray: true,
   })
   async getArchivedReport(): Promise<StockArchivedReportDto[]> {
-    return this.stockService.getArchivedReport();
+    const entities: StockArchivedReportEntity[] =
+      await this.stockService.getArchivedReport();
+    return plainToInstance(StockArchivedReportDto, entities, {
+      excludeExtraneousValues: true,
+    });
   }
 }

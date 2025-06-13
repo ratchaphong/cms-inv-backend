@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { StockType, ProductStatus } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { DashboardStatsEntity } from './entities/dashboard-stats.entity';
 
 @Injectable()
 export class DashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getStats() {
+  async getStats(): Promise<DashboardStatsEntity> {
     const [availableProducts, stockInToday, stockOutToday, totalUsers] =
       await Promise.all([
         this.prisma.product.findMany({
@@ -37,7 +38,7 @@ export class DashboardService {
       stockInToday,
       stockOutToday,
       totalUsers,
-      availableProducts, // ✅ ส่งข้อมูล products กลับไปด้วย
+      availableProducts: availableProducts,
     };
   }
 

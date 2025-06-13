@@ -3,7 +3,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateStockDto } from './dto/create-stock.dto';
 import { ProductStatus, StockType } from '@prisma/client';
 import { StockCronJob } from './stock.cron';
-import { StockArchivedReportDto } from './dto/stock-archived-report.dto';
+import { StockEntity } from './entities/stock.entity';
+import { StockArchivedReportEntity } from './entities/stock-archived-report.entity';
 
 @Injectable()
 export class StockService {
@@ -12,20 +13,18 @@ export class StockService {
     private readonly cron: StockCronJob,
   ) {}
 
-  async create(dto: CreateStockDto) {
+  async create(dto: CreateStockDto): Promise<StockEntity> {
     const product = await this.prisma.product.findUnique({
       where: { id: dto.productId },
     });
 
     if (!product) throw new NotFoundException('Product not found');
 
-    // ✅ คำนวณ stock ใหม่
     const updatedStock =
       dto.type === StockType.IN
         ? product.currentStock + dto.quantity
         : product.currentStock - dto.quantity;
 
-    // ✅ คำนวณ status ตามเงื่อนไขใหม่
     let status: ProductStatus;
     if (updatedStock > 10) {
       status = ProductStatus.AVAILABLE;
@@ -35,7 +34,6 @@ export class StockService {
       status = ProductStatus.LOW_STOCK;
     }
 
-    // ✅ อัปเดต currentStock และ status
     await this.prisma.product.update({
       where: { id: dto.productId },
       data: {
@@ -44,44 +42,24 @@ export class StockService {
       },
     });
 
-    // ✅ สร้าง stock record
     const newStock = await this.prisma.stock.create({
       data: dto,
       include: { product: true },
     });
 
-    console.log('✅ Created Stock:', newStock);
-
-    return newStock;
+    return new StockEntity(newStock);
   }
 
-  async findAll() {
+  async findAll(): Promise<StockEntity[]> {
     const result = await this.prisma.stock.findMany({
       include: { product: true },
       orderBy: { createdAt: 'desc' },
     });
-    console.log('📦 Fetched Stock:', result);
-    return result;
+    return result.map((r) => new StockEntity(r));
   }
 
-  async runManualCleanup(): Promise<{ success: boolean; message: string }> {
-    await this.cron.handleMidnightStockCleanup();
-    return {
-      success: true,
-      message: 'Archived & cleaned old stock successfully.',
-    };
-  }
-
-  async runManualWarning(): Promise<{ success: boolean; message: string }> {
-    await this.cron.handleNoonStockWarning();
-    return {
-      success: true,
-      message: 'Checked old stock successfully.',
-    };
-  }
-
-  async getArchivedReport(): Promise<StockArchivedReportDto[]> {
-    const data = await this.prisma.stockReport.findMany({
+  async getArchivedReport(): Promise<StockArchivedReportEntity[]> {
+    const rows = await this.prisma.stockReport.findMany({
       include: {
         product: true,
       },
@@ -90,15 +68,14 @@ export class StockService {
       },
     });
 
-    return data.map((s) => ({
-      stockId: s.stockId,
-      type: s.type,
-      quantity: s.quantity,
-      note: s.note,
-      productId: s.productId,
-      productName: s.product.name,
-      createdAt: s.createdAt,
-      archivedAt: s.archivedAt,
-    }));
+    return rows.map((s) => new StockArchivedReportEntity(s));
+  }
+
+  async runManualCleanup(): Promise<void> {
+    await this.cron.handleMidnightStockCleanup();
+  }
+
+  async runManualWarning(): Promise<void> {
+    await this.cron.handleNoonStockWarning();
   }
 }

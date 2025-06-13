@@ -4,12 +4,13 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { Product, ProductStatus } from '@prisma/client';
+import { ProductEntity } from './entities/product.entity';
 
 @Injectable()
 export class ProductService {
   constructor(private prisma: PrismaService) {}
 
-  async create(data: CreateProductDto): Promise<Product> {
+  async create(data: CreateProductDto): Promise<ProductEntity> {
     const { initialStock, ...rest } = data;
 
     // ✅ คำนวณสถานะตามจำนวน stock
@@ -31,56 +32,42 @@ export class ProductService {
       include: { stock: true },
     });
 
-    return product;
+    return new ProductEntity(product);
   }
 
-  async findAll(): Promise<Product[]> {
+  async findAll(): Promise<ProductEntity[]> {
     const products = await this.prisma.product.findMany({
-      include: {
-        stock: true, // ✅ ดึง stock ที่สัมพันธ์มาด้วย
-      },
+      include: { stock: true },
       orderBy: { createdAt: 'desc' },
     });
 
-    return products.map((product) => {
-      const stockBalance = product.stock.reduce((acc, s) => {
-        return s.type === 'IN' ? acc + s.quantity : acc - s.quantity;
-      }, 0);
-
-      return {
-        ...product,
-        stockBalance, // ✅ เพิ่มฟิลด์นี้เข้าไป
-      };
-    });
+    return products.map((p) => new ProductEntity(p));
   }
 
-  async findOne(id: number): Promise<Product> {
+  async findOne(id: number): Promise<ProductEntity> {
     const product = await this.prisma.product.findUniqueOrThrow({
       where: { id },
-      include: { stock: true }, // ✅ ดึง stock ทั้งหมดของสินค้านี้
+      include: { stock: true },
     });
-
-    return product;
+    return new ProductEntity(product);
   }
 
-  async updateProduct(id: number, data: UpdateProductDto): Promise<Product> {
-    const product = await this.prisma.product.update({
+  async updateProduct(
+    id: number,
+    data: UpdateProductDto,
+  ): Promise<ProductEntity> {
+    const updated = await this.prisma.product.update({
       where: { id },
       data,
       include: { stock: true },
     });
-
-    return product;
+    return new ProductEntity(updated);
   }
 
-  async deleteProduct(id: number): Promise<Product> {
-    await this.prisma.stock.deleteMany({
-      where: { productId: id },
-    });
-
-    return this.prisma.product.delete({
-      where: { id },
-    });
+  async deleteProduct(id: number): Promise<ProductEntity> {
+    await this.prisma.stock.deleteMany({ where: { productId: id } });
+    const deleted = await this.prisma.product.delete({ where: { id } });
+    return new ProductEntity(deleted);
   }
 
   // async deleteProduct(id: number): Promise<Product> {
@@ -102,7 +89,8 @@ export class ProductService {
   //   return deletedProduct;
   // }
 
-  async clearAll() {
-    return this.prisma.product.deleteMany();
+  async clearAll(): Promise<number> {
+    const result = await this.prisma.product.deleteMany();
+    return result.count;
   }
 }

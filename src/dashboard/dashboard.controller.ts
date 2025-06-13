@@ -9,6 +9,8 @@ import {
 import { DashboardService } from './dashboard.service';
 import { DashboardStatsDto } from './dto/dashboard-stats.dto';
 import { JwtAuthGuard } from 'src/user/guards/jwt-auth.guard';
+import { plainToInstance } from 'class-transformer';
+import { DashboardStatsEntity } from './entities/dashboard-stats.entity';
 
 @ApiTags('Dashboard')
 @Controller('dashboard')
@@ -20,7 +22,10 @@ export class DashboardController {
   @Get('stats')
   @ApiOperation({ summary: 'แสดงสถิติบนหน้า Dashboard' })
   @ApiOkResponse({ type: DashboardStatsDto })
-  async getStats() {
-    return this.dashboardService.getStats();
+  async getStats(): Promise<DashboardStatsDto> {
+    const stats: DashboardStatsEntity = await this.dashboardService.getStats();
+    return plainToInstance(DashboardStatsDto, stats, {
+      excludeExtraneousValues: true,
+    });
   }
 }

@@ -31,4 +31,8 @@ export class UserResponseDto {
   @Expose()
   @ApiProperty({ example: '2025-06-03T14:34:44.821Z' })
   createdAt: string;
+
+  @Expose()
+  @ApiProperty({ example: 'bstore.png' })
+  avatarUrl: string;
 }

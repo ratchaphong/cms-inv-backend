@@ -1,0 +1,29 @@
+import {
+  StockReport as PrismaStockReport,
+  StockType,
+  Product as PrismaProduct,
+} from '@prisma/client';
+import { ProductEntity } from 'src/product/entities/product.entity';
+
+export class StockArchivedReportEntity implements PrismaStockReport {
+  id: number;
+  stockId: number;
+  type: StockType;
+  quantity: number;
+  note: string | null;
+  productId: number;
+  createdAt: Date;
+  archivedAt: Date;
+
+  product?: PrismaProduct;
+
+  constructor(
+    partial: Partial<PrismaStockReport> & { product?: PrismaProduct },
+  ) {
+    Object.assign(this, partial);
+
+    if (partial.product) {
+      this.product = new ProductEntity(partial.product);
+    }
+  }
+}
