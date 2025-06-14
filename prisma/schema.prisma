@@ -13,6 +13,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// generator erd {
+//   provider = "prisma-erd-generator"
+//   output   = "./erd.svg"
+// }
+
 // datasource db {
 //   provider = "sqlite"
 //   url      = env("DATABASE_URL")

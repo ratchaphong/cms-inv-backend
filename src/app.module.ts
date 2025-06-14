@@ -9,6 +9,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
+import { QrModule } from './qr/qr.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { JwtModule } from '@nestjs/jwt';
     ProductModule,
     StockModule,
     DashboardModule,
+    QrModule,
   ],
 })
 export class AppModule {}
